@@ -41,7 +41,7 @@ event_list = get_dropdown_options("SELECT event_id FROM event")
 st.subheader("✍️ Input Absensi")
 with st.form("absensi_form"):
     nama_lengkap = st.selectbox("👤 Nama Lengkap", nama_list)
-    event_id = st.selectbox("📌 Event ID", event_list)
+    event_id = st.text_input("📌 Event ID")  # Changed from selectbox to text_input
 
     submitted = st.form_submit_button("✅ Submit Absensi")
 
@@ -50,13 +50,32 @@ with st.form("absensi_form"):
             date_come = datetime.now()
             conn = create_connection()
             cursor = conn.cursor()
+
+            # --- Fetch start and end time for the entered event_id ---
             cursor.execute("""
-                INSERT INTO absensi (nama_lengkap, event_id, date_come)
-                VALUES (%s, %s, %s)
-            """, (nama_lengkap, event_id, date_come.strftime("%Y-%m-%d %H:%M:%S")))
-            conn.commit()
+                SELECT date_start, date_end 
+                FROM event 
+                WHERE event_id = %s
+            """, (event_id,))
+            result = cursor.fetchone()
+
+            if result:
+                date_start, date_end = result
+                # Check if current time is within the event period
+                if date_start <= date_come <= date_end:
+                    cursor.execute("""
+                        INSERT INTO absensi (nama_lengkap, event_id, date_come)
+                        VALUES (%s, %s, %s)
+                    """, (nama_lengkap, event_id, date_come.strftime("%Y-%m-%d %H:%M:%S")))
+                    conn.commit()
+                    st.success(f"✔️ Absensi berhasil untuk **{nama_lengkap}** pada `{date_come}`")
+                else:
+                    st.warning(f"⛔ Waktu absensi di luar rentang event.\n\nEvent dimulai `{date_start}` dan berakhir `{date_end}`.")
+            else:
+                st.error("❌ Event ID tidak ditemukan.")
+
             cursor.close()
             conn.close()
-            st.success(f"✔️ Absensi telah berhasil **{nama_lengkap}** pada `{date_come}`")
+
         except Error as e:
             st.error(f"❌ Insert error: {e}")
