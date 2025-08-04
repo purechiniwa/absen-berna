@@ -64,6 +64,10 @@ with st.form("absensi_form"):
             if result:
                 date_start, date_end = result
                 # Check if current time is within the event period
+                if date_start.tzinfo is None:
+                    date_start = jakarta.localize(date_start)
+                if date_end.tzinfo is None:
+                    date_end = jakarta.localize(date_end)
                 if date_start <= date_come <= date_end:
                     cursor.execute("""
                         INSERT INTO absensi (nama_lengkap, event_id, date_come)
@@ -82,4 +86,5 @@ with st.form("absensi_form"):
         except Error as e:
 
             st.error(f"❌ Insert error: {e}")
+
 
