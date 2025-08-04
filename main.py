@@ -2,6 +2,7 @@ import streamlit as st
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
+from zoneinfo import ZoneInfo 
 
 # ---------- MySQL Connection via Secrets ----------
 def create_connection():
@@ -47,7 +48,7 @@ with st.form("absensi_form"):
 
     if submitted:
         try:
-            date_come = datetime.now()
+            date_come = datetime.now(ZoneInfo("Asia/Jakarta"))
             conn = create_connection()
             cursor = conn.cursor()
 
@@ -78,4 +79,5 @@ with st.form("absensi_form"):
             conn.close()
 
         except Error as e:
+
             st.error(f"❌ Insert error: {e}")
