@@ -1,4 +1,5 @@
 streamlit
 mysql-connector-python
-import pytz
+pytz
+
 
