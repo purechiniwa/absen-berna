@@ -65,7 +65,7 @@ event_list = get_dropdown_options("SELECT event_code FROM event ORDER BY event_c
 st.subheader("✍️ Input Absensi")
 with st.form("absensi_form"):
     nama_lengkap = st.selectbox("👤 Nama Lengkap", nama_list if nama_list else ["-- Pilih Nama --"])
-    event_code = st.text_input("📌 Event Code (misal: ekm-08-11-2025)")
+    event_code = st.text_input("📌 Event Code")
 
     submitted = st.form_submit_button("✅ Submit Absensi")
 
@@ -126,3 +126,4 @@ with st.form("absensi_form"):
 
             except Error as e:
                 st.error(f"❌ Insert error: {e}")
+
