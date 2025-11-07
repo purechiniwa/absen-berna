@@ -59,13 +59,13 @@ if selected_lingkungan != "-- Pilih Lingkungan --":
     )
 
 # ---------- Step 3: Load Event List ----------
-event_list = get_dropdown_options("SELECT event_id FROM event ORDER BY event_id")
+event_list = get_dropdown_options("SELECT event_code FROM event ORDER BY event_code")
 
 # ---------- Absensi Form ----------
 st.subheader("✍️ Input Absensi")
 with st.form("absensi_form"):
     nama_lengkap = st.selectbox("👤 Nama Lengkap", nama_list if nama_list else ["-- Pilih Nama --"])
-    event_id = st.text_input("📌 Event ID")  # You can switch back to selectbox if desired
+    event_code = st.text_input("📌 Event Code")  # You can switch back to selectbox if desired
 
     submitted = st.form_submit_button("✅ Submit Absensi")
 
@@ -83,8 +83,8 @@ with st.form("absensi_form"):
                 cursor.execute("""
                     SELECT date_start, date_end 
                     FROM event 
-                    WHERE event_id = %s
-                """, (event_id,))
+                    WHERE event_code = %s
+                """, (event_code,))
                 result = cursor.fetchone()
 
                 if result:
@@ -96,9 +96,9 @@ with st.form("absensi_form"):
 
                     if date_start <= date_come <= date_end:
                         cursor.execute("""
-                            INSERT INTO absensi (nama_lengkap, event_id, date_come)
+                            INSERT INTO absensi (nama_lengkap, event_code, date_come)
                             VALUES (%s, %s, %s)
-                        """, (nama_lengkap, event_id, date_come.strftime("%Y-%m-%d %H:%M:%S")))
+                        """, (nama_lengkap, event_code, date_come.strftime("%Y-%m-%d %H:%M:%S")))
                         conn.commit()
                         st.success(f"✔️ Absensi berhasil untuk **{nama_lengkap}** pada `{date_come}`")
                     else:
@@ -113,3 +113,4 @@ with st.form("absensi_form"):
 
             except Error as e:
                 st.error(f"❌ Insert error: {e}")
+
