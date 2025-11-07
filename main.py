@@ -67,6 +67,9 @@ with st.form("absensi_form"):
     nama_lengkap = st.selectbox("👤 Nama Lengkap", nama_list if nama_list else ["-- Pilih Nama --"])
     event_code = st.text_input("📌 Event Code")
 
+    # ✅ Checkbox Panitia
+    is_panitia = st.checkbox("👷‍♂️ Panitia")
+
     submitted = st.form_submit_button("✅ Submit Absensi")
 
     if submitted:
@@ -111,8 +114,6 @@ with st.form("absensi_form"):
 
                     hari_start = hari_dict[date_start.weekday()]
                     hari_end = hari_dict[date_end.weekday()]
-
-                    # translate month manually
                     bulan_start = bulan_dict[date_start.strftime("%B")]
                     bulan_end = bulan_dict[date_end.strftime("%B")]
 
@@ -126,7 +127,12 @@ with st.form("absensi_form"):
                     if date_start <= date_come <= date_end:
                         initials = ''.join([n[0].upper() for n in nama_lengkap.split() if n])  # e.g. OBA
                         time_str = date_come.strftime("%H.%M")
-                        special_code = f"{event_code}-{initials}-{time_str}"
+
+                        # ✅ Add "-P-" if Panitia checked
+                        if is_panitia:
+                            special_code = f"{event_code}-{initials}-P-{time_str}"
+                        else:
+                            special_code = f"{event_code}-{initials}-{time_str}"
 
                         cursor.execute("""
                             INSERT INTO absensi (nama_lengkap, event_code, date_come, special_code)
@@ -160,4 +166,3 @@ with st.form("absensi_form"):
 
             except Error as e:
                 st.error(f"❌ Insert error: {e}")
-
