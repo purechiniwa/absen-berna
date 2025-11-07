@@ -65,13 +65,15 @@ event_list = get_dropdown_options("SELECT event_code FROM event ORDER BY event_c
 st.subheader("✍️ Input Absensi")
 with st.form("absensi_form"):
     nama_lengkap = st.selectbox("👤 Nama Lengkap", nama_list if nama_list else ["-- Pilih Nama --"])
-    event_code = st.text_input("📌 Event Code")  # You can switch back to selectbox if desired
+    event_code = st.text_input("📌 Event Code (misal: ekm-08-11-2025)")
 
     submitted = st.form_submit_button("✅ Submit Absensi")
 
     if submitted:
         if not nama_list or nama_lengkap == "-- Pilih Nama --":
             st.warning("⚠️ Silakan pilih nama lengkap yang valid.")
+        elif not event_code.strip():
+            st.warning("⚠️ Masukkan kode event yang valid.")
         else:
             try:
                 jakarta = pytz.timezone("Asia/Jakarta")
@@ -95,15 +97,26 @@ with st.form("absensi_form"):
                         date_end = jakarta.localize(date_end)
 
                     if date_start <= date_come <= date_end:
+                        # --- Generate Special Code ---
+                        initials = ''.join([n[0].upper() for n in nama_lengkap.split() if n])  # OBA
+                        time_str = date_come.strftime("%H.%M")  # 19.30
+                        special_code = f"{event_code}-{initials}-{time_str}"
+
+                        # --- Insert into absensi ---
                         cursor.execute("""
-                            INSERT INTO absensi (nama_lengkap, event_code, date_come)
-                            VALUES (%s, %s, %s)
-                        """, (nama_lengkap, event_code, date_come.strftime("%Y-%m-%d %H:%M:%S")))
+                            INSERT INTO absensi (nama_lengkap, event_code, date_come, special_code)
+                            VALUES (%s, %s, %s, %s)
+                        """, (nama_lengkap, event_code, date_come.strftime("%Y-%m-%d %H:%M:%S"), special_code))
                         conn.commit()
-                        st.success(f"✔️ Absensi berhasil untuk **{nama_lengkap}** pada `{date_come}`")
+
+                        st.success(
+                            f"✔️ Absensi berhasil untuk **{nama_lengkap}** pada `{date_come}`\n\n"
+                            f"🆔 Kode Khusus: `{special_code}`"
+                        )
                     else:
                         st.warning(
-                            f"⛔ Waktu absensi di luar rentang event.\n\nEvent dimulai `{date_start}` dan berakhir `{date_end}`."
+                            f"⛔ Waktu absensi di luar rentang event.\n\n"
+                            f"Event dimulai `{date_start}` dan berakhir `{date_end}`."
                         )
                 else:
                     st.error("❌ Event ID tidak ditemukan.")
@@ -113,4 +126,3 @@ with st.form("absensi_form"):
 
             except Error as e:
                 st.error(f"❌ Insert error: {e}")
-
