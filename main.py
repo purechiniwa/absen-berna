@@ -65,7 +65,7 @@ event_list = get_dropdown_options("SELECT event_code FROM event ORDER BY event_c
 st.subheader("✍️ Input Absensi")
 with st.form("absensi_form"):
     nama_lengkap = st.selectbox("👤 Nama Lengkap", nama_list if nama_list else ["-- Pilih Nama --"])
-    event_code = st.text_input("📌 Event Code")
+    event_code = st.text_input("📌 Event Code (misal: ekm-08-11-2025)")
 
     submitted = st.form_submit_button("✅ Submit Absensi")
 
@@ -96,13 +96,38 @@ with st.form("absensi_form"):
                     if date_end.tzinfo is None:
                         date_end = jakarta.localize(date_end)
 
+                    # --- Format readable day/date/time ---
+                    hari_dict = {
+                        0: "Senin", 1: "Selasa", 2: "Rabu", 3: "Kamis",
+                        4: "Jumat", 5: "Sabtu", 6: "Minggu"
+                    }
+
+                    bulan_dict = {
+                        "January": "Januari", "February": "Februari", "March": "Maret",
+                        "April": "April", "May": "Mei", "June": "Juni",
+                        "July": "Juli", "August": "Agustus", "September": "September",
+                        "October": "Oktober", "November": "November", "December": "Desember"
+                    }
+
+                    hari_start = hari_dict[date_start.weekday()]
+                    hari_end = hari_dict[date_end.weekday()]
+
+                    # translate month manually
+                    bulan_start = bulan_dict[date_start.strftime("%B")]
+                    bulan_end = bulan_dict[date_end.strftime("%B")]
+
+                    tanggal_start = date_start.strftime(f"%d {bulan_start} %Y")
+                    tanggal_end = date_end.strftime(f"%d {bulan_end} %Y")
+
+                    jam_start = date_start.strftime("%H.%M")
+                    jam_end = date_end.strftime("%H.%M")
+
+                    # --- Absensi logic ---
                     if date_start <= date_come <= date_end:
-                        # --- Generate Special Code ---
-                        initials = ''.join([n[0].upper() for n in nama_lengkap.split() if n])  # OBA
-                        time_str = date_come.strftime("%H.%M")  # 19.30
+                        initials = ''.join([n[0].upper() for n in nama_lengkap.split() if n])  # e.g. OBA
+                        time_str = date_come.strftime("%H.%M")
                         special_code = f"{event_code}-{initials}-{time_str}"
 
-                        # --- Insert into absensi ---
                         cursor.execute("""
                             INSERT INTO absensi (nama_lengkap, event_code, date_come, special_code)
                             VALUES (%s, %s, %s, %s)
@@ -110,14 +135,23 @@ with st.form("absensi_form"):
                         conn.commit()
 
                         st.success(
-                            f"✔️ Absensi berhasil untuk **{nama_lengkap}** pada `{date_come}`\n\n"
+                            f"✔️ Absensi berhasil untuk **{nama_lengkap}** pada `{date_come.strftime('%d %B %Y %H:%M')}`\n\n"
                             f"🆔 Kode Khusus: `{special_code}`"
                         )
                     else:
-                        st.warning(
-                            f"⛔ Waktu absensi di luar rentang event.\n\n"
-                            f"Event dimulai `{date_start}` dan berakhir `{date_end}`."
-                        )
+                        # --- Adjust message depending on same-day or multi-day event ---
+                        if date_start.date() == date_end.date():
+                            st.warning(
+                                f"⛔ Waktu absensi di luar rentang event.\n\n"
+                                f"📅 Event dimulai **{hari_start}, {tanggal_start} pukul {jam_start}** "
+                                f"dan berakhir **{jam_end}**."
+                            )
+                        else:
+                            st.warning(
+                                f"⛔ Waktu absensi di luar rentang event.\n\n"
+                                f"📅 Event dimulai **{hari_start}, {tanggal_start} pukul {jam_start}**\n"
+                                f"🕓 dan berakhir **{hari_end}, {tanggal_end} pukul {jam_end}**."
+                            )
                 else:
                     st.error("❌ Event ID tidak ditemukan.")
 
@@ -126,4 +160,3 @@ with st.form("absensi_form"):
 
             except Error as e:
                 st.error(f"❌ Insert error: {e}")
-
